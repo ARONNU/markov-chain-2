@@ -1,67 +1,45 @@
-import numpy as np
-import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
+import numpy as np
+from streamlit import st
 
-st.title("Markov Chain Calculator")
+# Set initial matrix dimensions
+m, n = 2, 2
 
-# Define the states
-states = []
+# Define function for matrix multiplication
+def matrix_multiply(matrix_a, matrix_b):
+  return np.matmul(matrix_a, matrix_b)
 
-for state in range(3):
-    state = st.text_input("Enter state: ", key=state)
-    states.append(state)
+# Create empty dataframes for user input
+df_a = pd.DataFrame(np.zeros((m, n)), dtype=int)
+df_b = pd.DataFrame(np.zeros((n, m)), dtype=int)
 
-df = pd.DataFrame(columns=['Iterations'] + states)
+# Build the Streamlit app
+st.title("Interactive Matrix Multiplication")
 
-# Define the initial state
-ism = np.zeros((3), dtype=float)
+# Sidebar for choosing matrix dimensions
+with st.sidebar:
+  st.header("Matrix Dimensions")
+  m = st.slider("Number of rows in matrix A", min_value=1, max_value=10, value=m)
+  n = st.slider("Number of columns in matrix A and rows in matrix B", min_value=1, max_value=10, value=n)
 
-# for loop to get probabilities for ism
-for i in range(3):
-    # Prompt the user for a float value
-    value = st.number_input(f"Enter probability for S0 ({i + 1}): ")
-    # Store the value in the corresponding position of the matrix
-    ism[i] = value
+# User input for matrices
+st.header("Matrix A")
+st.dataframe(df_a.astype(int), editable=True)
 
-df.loc[0] = [0] + list(ism)
+st.header("Matrix B")
+st.dataframe(df_b.astype(int), editable=True)
 
-# Define the transition matrix
-tpm = np.zeros((3, 3), dtype=float)
+# Calculate and display result
+if st.button("Calculate"):
+  matrix_a = df_a.to_numpy()
+  matrix_b = df_b.to_numpy()
+  result = matrix_multiply(matrix_a, matrix_b)
+  st.header("Result Matrix")
+  st.dataframe(result)
 
-# for loop to get probabilities for tpm
-for i in range(3):
-  for j in range(3):
-    # Prompt the user for a float value
-    value = st.number_input(f"Enter probability for TPM ({i + 1},{j + 1}): ")
-    # Store the value in the corresponding position of the matrix
-    tpm[i, j] = value
+# Show explanation (optional)
+st.markdown("""
+**Note:** This app allows you to input matrices through editable tables. 
+Click "Calculate" to perform the multiplication and see the result.
+""")
 
-iterations = st.slider("Number of iterations", 1, 100, 1)
-
-for i in range(iterations):
-    ism = np.dot(ism, tpm)
-    df.loc[i + 1] = [i + 1] + list(ism.copy())
-
-if st.button('Calculate'):
-    # correspond each state to the values in the ism and store in a dictionary. convert the ism values to percentages and round to 2 decimal places
-    results = dict(zip(states, np.round(ism * 100, 2)))
-
-    output = " "
-    # Loop through each state and probability
-    for state, probability in zip(states, ism):
-        # Format the probability with two decimal places
-        output += f"* **{state}:** {probability:.2%}\n"
-    
-    fig, ax = plt.subplots()
-    ax.plot(df['Iterations'], df[states], label=states)
-    ax.set_xlabel('Iterations')
-    ax.set_ylabel('Probability')
-    ax.set_title('Markov Chain')
-    ax.legend()
-    st.pyplot(fig)
-
-    # Display the formatted output in Streamlit
-    st.markdown(output)
-
-    df = pd.DataFrame(columns=['Iterations'] + states)
